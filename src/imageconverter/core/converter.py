@@ -60,12 +60,15 @@ class ImageConverter:
             if not pil_format:
                 return False, f"Unsupported format: {output_format}"
 
-            # 2. Load image
+            # 2. Validate and clamp quality parameter
+            quality = max(0, min(100, quality))
+
+            # 3. Load image
             with Image.open(input_path) as img:
-                # 3. Extract metadata before conversion
+                # 4. Extract metadata before conversion
                 metadata = extract_metadata(img)
 
-                # 4. Handle transparency for JPEG (no alpha support)
+                # 5. Handle transparency for JPEG (no alpha support)
                 if output_format.lower() == 'jpeg' and img.mode in ('RGBA', 'LA', 'P'):
                     bg = Image.new('RGB', img.size, (255, 255, 255))
                     if img.mode == 'P':
@@ -73,16 +76,16 @@ class ImageConverter:
                     bg.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
                     img = bg
 
-                # 5. Prepare format-specific save options
+                # 6. Prepare format-specific save options
                 save_kwargs = self._get_save_kwargs(output_format.lower(), quality, lossless)
 
-                # 6. Ensure output directory exists
+                # 7. Ensure output directory exists
                 output_path.parent.mkdir(parents=True, exist_ok=True)
 
-                # 7. Save image with format-specific options
+                # 8. Save image with format-specific options
                 img.save(output_path, format=pil_format, **save_kwargs)
 
-            # 8. Apply metadata to saved image
+            # 9. Apply metadata to saved image
             apply_metadata(output_path, metadata)
 
             return True, f"Successfully converted to {output_format}"
