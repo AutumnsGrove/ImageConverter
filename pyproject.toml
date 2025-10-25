@@ -12,6 +12,7 @@ dependencies = [
     "rich>=13.0.0",
     "click>=8.0.0",
     "pillow-heif>=0.13.0",
+    "pillow-jxl-plugin>=1.0.0",
 ]
 
 [project.optional-dependencies]
