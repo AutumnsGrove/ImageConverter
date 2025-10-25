@@ -57,10 +57,10 @@ def main(
     images = processor.discover_images(input_path, recursive=recursive)
 
     if not images:
-        console.print("[yellow]No PNG images found[/yellow]")
+        console.print("[yellow]No images found[/yellow]")
         return
 
-    console.print(f"[green]Found {len(images)} PNG images[/green]")
+    console.print(f"[green]Found {len(images)} images[/green]")
 
     # Set up output directory
     if output:

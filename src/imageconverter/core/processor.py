@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Callable, Dict, Any
 import os
 from .converter import ImageConverter
-from .validator import is_valid_image
+from .validator import is_valid_image, SUPPORTED_EXTENSIONS
 
 
 class BatchProcessor:
@@ -21,7 +21,7 @@ class BatchProcessor:
         self.workers = workers
 
     def discover_images(self, root_path: Path, recursive: bool = True) -> List[Path]:
-        """Discover PNG images in a directory.
+        """Discover images of any supported format in a directory.
 
         Args:
             root_path: Root directory to scan
@@ -32,20 +32,22 @@ class BatchProcessor:
         """
         images = []
 
-        if recursive:
-            pattern = "**/*.png"
-        else:
-            pattern = "*.png"
+        # Scan for all supported image extensions
+        for ext in SUPPORTED_EXTENSIONS:
+            if recursive:
+                pattern = f"**/*{ext}"
+            else:
+                pattern = f"*{ext}"
 
-        for img_path in root_path.glob(pattern):
-            # Skip hidden files/folders
-            if any(part.startswith('.') for part in img_path.parts):
-                continue
+            for img_path in root_path.glob(pattern):
+                # Skip hidden files/folders
+                if any(part.startswith('.') for part in img_path.parts):
+                    continue
 
-            # Validate it's actually a PNG
-            is_valid, _ = is_valid_image(img_path)
-            if is_valid:
-                images.append(img_path)
+                # Validate it's actually a valid image
+                is_valid, _ = is_valid_image(img_path)
+                if is_valid:
+                    images.append(img_path)
 
         return images
 

@@ -5,8 +5,12 @@ from typing import Tuple
 from PIL import Image
 
 
+# Supported image extensions
+SUPPORTED_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp', '.avif', '.jxl', '.bmp', '.tiff', '.tif', '.gif'}
+
+
 def is_valid_image(filepath: Path) -> Tuple[bool, str]:
-    """Validate if a file is a valid PNG image.
+    """Validate if a file is a valid image (any format supported by PIL).
 
     Args:
         filepath: Path to the image file
@@ -21,20 +25,11 @@ def is_valid_image(filepath: Path) -> Tuple[bool, str]:
     if not filepath.is_file():
         return False, "Path is not a file"
 
-    if not filepath.suffix.lower() == ".png":
-        return False, "File is not a PNG"
+    # Check if extension is supported
+    if filepath.suffix.lower() not in SUPPORTED_EXTENSIONS:
+        return False, f"Unsupported file extension: {filepath.suffix}"
 
-    # Check PNG magic bytes
-    try:
-        with open(filepath, 'rb') as f:
-            header = f.read(8)
-            # PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A
-            if header != b'\x89PNG\r\n\x1a\n':
-                return False, "File is not a valid PNG (wrong magic bytes)"
-    except Exception as e:
-        return False, f"Error reading file: {str(e)}"
-
-    # Check if image can be opened and is not corrupted
+    # Try to open and verify image with PIL
     try:
         with Image.open(filepath) as img:
             img.verify()
