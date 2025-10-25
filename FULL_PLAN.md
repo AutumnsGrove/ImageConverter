@@ -29,6 +29,10 @@
   - `utils/paths.py` - implemented
 - **House agents installed** (`.claude/agents/`)
 - **BaseProject ClaudeUsage guides** installed
+- **Test data available** (`bin/` folder with journal photos)
+  - Contains real-world PNG images for testing
+  - May include some non-PNG files (needs pre-test cleanup)
+  - Located in project root at `bin/` (gitignored)
 
 ### ❌ What's MISSING (Must implement tonight)
 
@@ -680,15 +684,41 @@ def test_convert_to_webp(sample_png, tmp_path):
 
 #### Task 9: Test with Real PNG Batch (10 min)
 
-**User will provide 100-250 PNG images for testing**
+**Test images available in `bin/` folder (journal photos from this year)**
 
-Steps:
-1. User provides path to PNG folder
-2. Run CLI: `uv run imgconvert /path/to/pngs --format webp --verbose`
-3. Verify output directory created
-4. Check conversion success rate
-5. Spot-check converted images
-6. Test GUI with same batch
+**IMPORTANT:** The `bin/` folder may contain some non-PNG files that need cleanup first.
+
+**Pre-test cleanup:**
+```bash
+# Check what file types are in bin/
+cd bin/
+file * | grep -v PNG | head -20  # Show non-PNG files
+
+# Option 1: Move non-PNGs to a subfolder
+mkdir -p non-png
+find . -maxdepth 1 -type f ! -name "*.png" -exec mv {} non-png/ \;
+
+# Option 2: Just work with PNGs and let validator filter the rest
+# (validator should gracefully skip non-PNG files)
+```
+
+**Test steps:**
+1. Run CLI on bin folder: `uv run imgconvert bin/ --format webp --verbose`
+2. Verify output directory created at `~/Downloads/ImageConverter_Output/`
+3. Check conversion success rate (should be high for valid PNGs)
+4. Validator should skip non-PNG files gracefully
+5. Spot-check converted images (open a few .webp files)
+6. Test GUI with same batch: `uv run imageconverter`
+   - Select `bin/` folder
+   - Choose WebP format, quality 85
+   - Watch progress bar
+   - Verify results
+
+**Expected behavior:**
+- Valid PNGs convert successfully
+- Non-PNG files are skipped with clear error messages
+- No crashes or hangs during batch processing
+- Progress bars update smoothly
 
 ---
 
