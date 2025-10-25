@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from typing import Tuple
+from PIL import Image
 
 
 def is_valid_image(filepath: Path) -> Tuple[bool, str]:
@@ -13,6 +14,7 @@ def is_valid_image(filepath: Path) -> Tuple[bool, str]:
     Returns:
         Tuple of (is_valid, error_message). If valid, error_message is empty.
     """
+    # Basic checks
     if not filepath.exists():
         return False, "File does not exist"
 
@@ -22,7 +24,20 @@ def is_valid_image(filepath: Path) -> Tuple[bool, str]:
     if not filepath.suffix.lower() == ".png":
         return False, "File is not a PNG"
 
-    # TODO: Implement magic bytes check
-    # TODO: Implement corruption detection
+    # Check PNG magic bytes
+    try:
+        with open(filepath, 'rb') as f:
+            header = f.read(8)
+            # PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A
+            if header != b'\x89PNG\r\n\x1a\n':
+                return False, "File is not a valid PNG (wrong magic bytes)"
+    except Exception as e:
+        return False, f"Error reading file: {str(e)}"
 
-    return True, ""
+    # Check if image can be opened and is not corrupted
+    try:
+        with Image.open(filepath) as img:
+            img.verify()
+        return True, ""
+    except Exception as e:
+        return False, f"Corrupted or invalid image: {str(e)}"

@@ -2,6 +2,9 @@
 
 from pathlib import Path
 from typing import List, Callable, Dict, Any
+import os
+from .converter import ImageConverter
+from .validator import is_valid_image
 
 
 class BatchProcessor:
@@ -13,8 +16,6 @@ class BatchProcessor:
         Args:
             workers: Number of worker processes (None = CPU count - 1)
         """
-        import os
-
         if workers is None:
             workers = max(1, os.cpu_count() - 1 if os.cpu_count() else 1)
         self.workers = workers
@@ -29,17 +30,30 @@ class BatchProcessor:
         Returns:
             List of discovered image paths
         """
-        # TODO: Implement image discovery
-        # TODO: Filter hidden files/folders
-        # TODO: Validate PNG files
+        images = []
 
-        return []
+        if recursive:
+            pattern = "**/*.png"
+        else:
+            pattern = "*.png"
+
+        for img_path in root_path.glob(pattern):
+            # Skip hidden files/folders
+            if any(part.startswith('.') for part in img_path.parts):
+                continue
+
+            # Validate it's actually a PNG
+            is_valid, _ = is_valid_image(img_path)
+            if is_valid:
+                images.append(img_path)
+
+        return images
 
     def process_batch(
         self,
         image_list: List[Path],
         options: Dict[str, Any],
-        progress_callback: Callable[[int, int], None] | None = None,
+        progress_callback: Callable[[int, int, str], None] | None = None,
     ) -> Dict[str, Any]:
         """Process a batch of images.
 
@@ -51,27 +65,80 @@ class BatchProcessor:
         Returns:
             Dictionary with processing results (successes, failures, etc.)
         """
-        # TODO: Implement batch processing with multiprocessing
-        # TODO: Handle errors gracefully
-        # TODO: Collect results
+        results = {
+            "total": len(image_list),
+            "successes": 0,
+            "failures": 0,
+            "errors": []
+        }
 
-        return {"total": 0, "successes": 0, "failures": 0, "errors": []}
+        converter = ImageConverter()
+
+        # Process images sequentially (multiprocessing can be added later)
+        for idx, input_path in enumerate(image_list):
+            # Generate output path
+            output_path = self.generate_output_path(
+                input_path,
+                Path(options['output_dir']),
+                options['format']
+            )
+
+            # Convert
+            success, message = converter.convert_single(
+                input_path,
+                output_path,
+                options['format'],
+                options.get('quality', 85),
+                options.get('lossless', False)
+            )
+
+            # Update results
+            if success:
+                results['successes'] += 1
+            else:
+                results['failures'] += 1
+                results['errors'].append({
+                    'file': str(input_path),
+                    'error': message
+                })
+
+            # Progress callback
+            if progress_callback:
+                progress_callback(idx + 1, len(image_list), str(input_path.name))
+
+        return results
 
     def generate_output_path(
-        self, input_path: Path, output_dir: Path, pattern: str | None = None
+        self, input_path: Path, output_dir: Path, format: str
     ) -> Path:
         """Generate output path for a converted image.
 
         Args:
             input_path: Input image path
             output_dir: Output directory
-            pattern: Filename pattern template
+            format: Output format
 
         Returns:
             Output file path
         """
-        # TODO: Implement path generation
-        # TODO: Handle name collisions
-        # TODO: Support patterns
+        stem = input_path.stem
 
-        return output_dir / input_path.name
+        # Map format to extension
+        ext_map = {
+            'webp': '.webp',
+            'jpeg': '.jpg',
+            'jpeg-xl': '.jxl',
+            'avif': '.avif',
+            'png': '.png'
+        }
+        ext = ext_map.get(format, '.webp')
+
+        output_path = output_dir / f"{stem}{ext}"
+
+        # Handle name collisions
+        counter = 1
+        while output_path.exists():
+            output_path = output_dir / f"{stem}_{counter}{ext}"
+            counter += 1
+
+        return output_path
